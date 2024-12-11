@@ -1,11 +1,10 @@
 import { core } from "@marboris/coreutils";
-import { connect } from "amqplib";
 
 const EXCHANGE_NAME = "delayed_exchange";
 
 class app extends core {
   async free() {
-    await this.closeConnection();
+    await this.closeAmqp();
   }
 
   constructor() {
@@ -22,39 +21,33 @@ class app extends core {
     });
   }
 
-  connection = null;
-  channel = null;
-
   async initRabbitMQ() {
-    if (!this.connection) {
-      this.connection = await connect(this.env_config.amqp);
-      this.channel = await this.connection.createChannel();
-      console.log("RabbitMQ connection and channel created.");
-    }
+    await this.connectAmqp(this.env_config.amqp);
+    console.log("RabbitMQ connection and channel created.");
   }
 
   async assertQueues(queue) {
-    if (!this.channel) {
+    if (!this.channelAmqp) {
       throw new Error("Channel is not initialized.");
     }
-    await this.channel.assertExchange(EXCHANGE_NAME, "x-delayed-message", {
+    await this.channelAmqp.assertExchange(EXCHANGE_NAME, "x-delayed-message", {
       durable: true,
       arguments: {
         "x-delayed-type": "direct",
       },
     });
-    await this.channel.assertQueue(queue, { durable: true });
-    await this.channel.bindQueue(queue, EXCHANGE_NAME, "");
+    await this.channelAmqp.assertQueue(queue, { durable: true });
+    await this.channelAmqp.bindQueue(queue, EXCHANGE_NAME, "");
   }
 
   async sendMessage(message, queue, delayMs = 0, retries = 3) {
     try {
       await this.initRabbitMQ();
       await this.assertQueues(queue);
-      if (!this.channel) {
+      if (!this.channelAmqp) {
         throw new Error("Channel is not initialized.");
       }
-      this.channel.publish(
+      this.channelAmqp.publish(
         EXCHANGE_NAME,
         "",
         Buffer.from(JSON.stringify(message)),
@@ -76,12 +69,6 @@ class app extends core {
         await this.sendMessage(message, queue, delayMs, retries - 1);
       }
     }
-  }
-
-  async closeConnection() {
-    console.log("RabbitMQ connection closed.");
-    if (this.channel) await this.channel.close();
-    if (this.connection) await this.connection.close();
   }
 }
 
