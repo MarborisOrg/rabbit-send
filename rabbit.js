@@ -1,33 +1,36 @@
-import { core } from "@marboris/coreutils";
+import { Core } from "@marboris/coreutils";
 
 const EXCHANGE_NAME = "delayed_exchange";
 
-class RabbitMQManager extends core {
+class RabbitMQManager extends Core {
   constructor() {
     super();
   }
 
   async init() {
-    await this.connectAmqp(this.env_config.amqp);
+    if (!this.config.EnvConfig.amqp) {
+      throw new Error("[env] amqp is require.");
+    }
+    await this.amqpManager.connect(this.config.EnvConfig.amqp);
     console.log("RabbitMQ connection and channel created.");
   }
 
   async assertQueues(queue) {
-    if (!this.channelAmqp) {
+    if (!this.amqpManager.getChannel()) {
       throw new Error("Channel is not initialized.");
     }
-    await this.channelAmqp.assertExchange(EXCHANGE_NAME, "x-delayed-message", {
+    await this.amqpManager.getChannel().assertExchange(EXCHANGE_NAME, "x-delayed-message", {
       durable: true,
       arguments: {
         "x-delayed-type": "direct",
       },
     });
-    await this.channelAmqp.assertQueue(queue, { durable: true });
-    await this.channelAmqp.bindQueue(queue, EXCHANGE_NAME, "");
+    await this.amqpManager.getChannel().assertQueue(queue, { durable: true });
+    await this.amqpManager.getChannel().bindQueue(queue, EXCHANGE_NAME, "");
   }
 
   async close() {
-    await this.closeAmqp();
+    await this.amqpManager.close()
   }
 
   free() {}
@@ -42,10 +45,10 @@ class MessageSender {
     try {
       await this.rabbitMQManager.init()
       await this.rabbitMQManager.assertQueues(queue);
-      if (!this.rabbitMQManager.channelAmqp) {
+      if (!this.rabbitMQManager.amqpManager.getChannel()) {
         throw new Error("Channel is not initialized.");
       }
-      this.rabbitMQManager.channelAmqp.publish(
+      this.rabbitMQManager.amqpManager.getChannel().publish(
         EXCHANGE_NAME,
         "",
         Buffer.from(JSON.stringify(message)),
@@ -83,6 +86,6 @@ class MessageSender {
     module: "module_name",
   };
 
-  await messageSender.sendMessage(text, rabbitMQManager.args.queue, 40000);
+  await messageSender.sendMessage(text, rabbitMQManager.config.Args.queue, 40000);
   process.exit(0);
 })();
