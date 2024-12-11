@@ -9,7 +9,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@marboris/coreutils": "^2.2.3",
+    "@marboris/coreutils": "^2.3.1",
     "amqplib": "^0.10.5"
   }
 }
