@@ -4,8 +4,12 @@ import { connect } from "amqplib";
 const EXCHANGE_NAME = "delayed_exchange";
 
 class app extends core {
+  async free() {
+    await this.closeConnection();
+  }
+
   constructor() {
-    super()
+    super();
     const text = {
       item_id: "macbook",
       text: "This is a sample message to send receiver to check the ordered Item Availability",
@@ -13,17 +17,10 @@ class app extends core {
       source: "source_name",
       module: "module_name",
     };
-    void this.sendMessage(text, this.args.queue, 40000).then(
-      async function () {
-        await this.closeConnection();
-        process.exit();
-      }
-    );
+    void this.sendMessage(text, this.args.queue, 40000).then(async function () {
+      process.exit(0);
+    });
   }
-  
-    free() {
-
-    }
 
   connection = null;
   channel = null;
@@ -82,10 +79,10 @@ class app extends core {
   }
 
   async closeConnection() {
+    console.log("RabbitMQ connection closed.");
     if (this.channel) await this.channel.close();
     if (this.connection) await this.connection.close();
-    console.log("RabbitMQ connection closed.");
   }
 }
 
-new app()
+new app();
