@@ -2,28 +2,12 @@ import { core } from "@marboris/coreutils";
 
 const EXCHANGE_NAME = "delayed_exchange";
 
-new (class extends core {
-  free() {
-    (async () => {
-      await this.closeAmqp();
-    })();
-  }
-
+class RabbitMQManager extends core {
   constructor() {
     super();
-    const text = {
-      item_id: "macbook",
-      text: "This is a sample message to send receiver to check the ordered Item Availability",
-      timestamp: new Date().toISOString(),
-      source: "source_name",
-      module: "module_name",
-    };
-    void this.sendMessage(text, this.args.queue, 40000).then(async function () {
-      process.exit(0);
-    });
   }
 
-  async initRabbitMQ() {
+  async init() {
     await this.connectAmqp(this.env_config.amqp);
     console.log("RabbitMQ connection and channel created.");
   }
@@ -42,14 +26,26 @@ new (class extends core {
     await this.channelAmqp.bindQueue(queue, EXCHANGE_NAME, "");
   }
 
+  async close() {
+    await this.closeAmqp();
+  }
+
+  free() {}
+}
+
+class MessageSender {
+  constructor(rabbitMQManager) {
+    this.rabbitMQManager = rabbitMQManager;
+  }
+
   async sendMessage(message, queue, delayMs = 0, retries = 3) {
     try {
-      await this.initRabbitMQ();
-      await this.assertQueues(queue);
-      if (!this.channelAmqp) {
+      await this.rabbitMQManager.init()
+      await this.rabbitMQManager.assertQueues(queue);
+      if (!this.rabbitMQManager.channelAmqp) {
         throw new Error("Channel is not initialized.");
       }
-      this.channelAmqp.publish(
+      this.rabbitMQManager.channelAmqp.publish(
         EXCHANGE_NAME,
         "",
         Buffer.from(JSON.stringify(message)),
@@ -64,6 +60,7 @@ new (class extends core {
         JSON.stringify(message),
         `${queue}_delay`
       );
+    await this.rabbitMQManager.close();
     } catch (err) {
       console.warn("Error sending message:", err);
       if (retries > 0) {
@@ -72,4 +69,20 @@ new (class extends core {
       }
     }
   }
-})()
+}
+
+(async () => {
+  const rabbitMQManager = new RabbitMQManager();
+  const messageSender = new MessageSender(rabbitMQManager);
+
+  const text = {
+    item_id: "macbook",
+    text: "This is a sample message to send receiver to check the ordered Item Availability",
+    timestamp: new Date().toISOString(),
+    source: "source_name",
+    module: "module_name",
+  };
+
+  await messageSender.sendMessage(text, rabbitMQManager.args.queue, 40000);
+  process.exit(0);
+})();
