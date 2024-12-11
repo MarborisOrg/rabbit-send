@@ -1,9 +1,9 @@
-const { default: Core } = require("@marboris/coreutils");
-const amqp = require("amqplib");
+import { core } from "@marboris/coreutils";
+import { connect } from "amqplib";
 
 const EXCHANGE_NAME = "delayed_exchange";
 
-class app extends Core {
+class app extends core {
   constructor() {
     super()
     const text = {
@@ -30,7 +30,7 @@ class app extends Core {
 
   async initRabbitMQ() {
     if (!this.connection) {
-      this.connection = await amqp.connect(this.env_config.amqp);
+      this.connection = await connect(this.env_config.amqp);
       this.channel = await this.connection.createChannel();
       console.log("RabbitMQ connection and channel created.");
     }

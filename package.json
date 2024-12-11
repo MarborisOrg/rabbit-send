@@ -2,6 +2,7 @@
   "name": "rabbit_send",
   "version": "1.0.0",
   "main": "rabbit.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -9,7 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@marboris/coreutils": "^2.3.1",
+    "@marboris/coreutils": "^2.3.3",
     "amqplib": "^0.10.5"
   }
 }
