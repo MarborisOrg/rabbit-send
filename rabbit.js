@@ -2,9 +2,11 @@ import { core } from "@marboris/coreutils";
 
 const EXCHANGE_NAME = "delayed_exchange";
 
-class app extends core {
-  async free() {
-    await this.closeAmqp();
+new (class extends core {
+  free() {
+    (async () => {
+      await this.closeAmqp();
+    })();
   }
 
   constructor() {
@@ -70,6 +72,4 @@ class app extends core {
       }
     }
   }
-}
-
-new app();
+})()
