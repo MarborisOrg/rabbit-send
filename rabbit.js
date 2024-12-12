@@ -3,8 +3,7 @@ import { Core } from "@marboris/coreutils";
 const EXCHANGE_NAME = "delayed_exchange";
 
 class RabbitMQManager extends Core {
-  constructor() {
-    super();
+  Main() {
     this.channel = null;
   }
 
@@ -69,6 +68,7 @@ class MessageSender {
         "",
         Buffer.from(JSON.stringify(message)),
         {
+          persistent: true,
           headers: {
             "x-delay": delayMs,
           },
@@ -101,7 +101,7 @@ class MessageSender {
   };
 
   try {
-    await messageSender.sendMessage(text, rabbitMQManager.config.Args.queue, 40000);
+    await messageSender.sendMessage(text, rabbitMQManager.config.Args.queue, 5000);
   } catch (err) {
     console.error("Error occurred during message sending:", err);
   }
