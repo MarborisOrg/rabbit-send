@@ -1,5 +1,6 @@
 import { Core } from "@marboris/coreutils";
 import { Router } from "express";
+import Joi from "joi";
 
 const EXCHANGE_NAME = "delayed_exchange";
 
@@ -91,31 +92,42 @@ class MessageSender {
   }
 }
 
+const validateInput = (data) => {
+  const schema = Joi.object({
+    queue: Joi.string().optional(),
+    delay: Joi.number().integer().min(0).default(0),
+  }).unknown();
+
+  return schema.validate(data);
+};
+
 (async () => {
   const rabbitMQManager = new RabbitMQManager();
   const messageSender = new MessageSender(rabbitMQManager);
 
-  // await rabbitMQManager.dbManager.connect();
   await rabbitMQManager.expressManager.start();
 
   const router = Router();
 
-  router.post("/send", (req, res) => {
-    const data = req.body;
+  router.post("/send", async (req, res) => {
+    const { error, value } = validateInput(req.body);
+    if (error) {
+      return res.status(400).json({ status: 400, message: error.details[0].message });
+    }
 
-    (async () => {
-      try {
-        await messageSender.sendMessage(
-          data,
-          data.queue || rabbitMQManager.config.Args.queue,
-          data.delay || 0
-        );
-        res.status(200).json({status: 200});
-      } catch (err) {
-        console.error("Error occurred during message sending:", err);
-        res.status(500).json({status: 500});
-      }
-    })();
+    const { queue, delay } = value;
+
+    try {
+      await messageSender.sendMessage(
+        req.body,
+        queue || rabbitMQManager.config.Args.queue,
+        delay
+      );
+      res.status(200).json({ status: 200, message: "Message sent successfully." });
+    } catch (err) {
+      console.error("Error occurred during message sending:", err);
+      res.status(500).json({ status: 500, message: "Failed to send message." });
+    }
   });
 
   void rabbitMQManager.expressManager.addRoute("/", router);
