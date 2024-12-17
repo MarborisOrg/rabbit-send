@@ -44,8 +44,8 @@ class RabbitMQManager extends Core {
   }
 
   async close() {
-      await this.amqpManager.close();
-      console.log("RabbitMQ connection closed.");
+    await this.amqpManager.close();
+    console.log("RabbitMQ connection closed.");
   }
 }
 
@@ -74,7 +74,9 @@ class MessageSender {
           },
         }
       );
-      console.log(`Sent message to queue '${queue}_delay' with delay of ${delayMs}ms`);
+      console.log(
+        `Sent message to queue '${queue}_delay' with delay of ${delayMs}ms`
+      );
       await this.rabbitMQManager.close();
     } catch (err) {
       console.warn("Error sending message:", err);
@@ -101,7 +103,11 @@ class MessageSender {
   };
 
   try {
-    await messageSender.sendMessage(text, rabbitMQManager.config.Args.queue, 5000);
+    await messageSender.sendMessage(
+      text,
+      rabbitMQManager.config.Args.queue,
+      5000
+    );
   } catch (err) {
     console.error("Error occurred during message sending:", err);
   }
