@@ -1,4 +1,5 @@
 import { Core } from "@marboris/coreutils";
+import { Router } from "express";
 
 const EXCHANGE_NAME = "delayed_exchange";
 
@@ -94,22 +95,28 @@ class MessageSender {
   const rabbitMQManager = new RabbitMQManager();
   const messageSender = new MessageSender(rabbitMQManager);
 
-  const text = {
-    item_id: "macbook",
-    text: "This is a sample message to send receiver to check the ordered Item Availability",
-    timestamp: new Date().toISOString(),
-    source: "source_name",
-    module: "module_name",
-  };
+  // await rabbitMQManager.dbManager.connect();
+  await rabbitMQManager.expressManager.start();
 
-  try {
-    await messageSender.sendMessage(
-      text,
-      rabbitMQManager.config.Args.queue,
-      5000
-    );
-  } catch (err) {
-    console.error("Error occurred during message sending:", err);
-  }
-  process.exit(0);
+  const router = Router();
+
+  router.post("/send", (req, res) => {
+    const data = req.body;
+
+    (async () => {
+      try {
+        await messageSender.sendMessage(
+          data,
+          data.queue || rabbitMQManager.config.Args.queue,
+          data.delay || 0
+        );
+        res.status(200).json({status: 200});
+      } catch (err) {
+        console.error("Error occurred during message sending:", err);
+        res.status(500).json({status: 500});
+      }
+    })();
+  });
+
+  void rabbitMQManager.expressManager.addRoute("/", router);
 })();

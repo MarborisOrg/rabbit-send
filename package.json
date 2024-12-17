@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@marboris/coreutils": "^2.8.12"
+    "@marboris/coreutils": "^2.8.12",
+    "joi": "^17.13.3"
   }
 }
