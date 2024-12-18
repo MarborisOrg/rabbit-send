@@ -10,10 +10,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@marboris/coreutils": "^2.8.12",
+    "@marboris/coreutils": "^2.8.13",
     "joi": "^17.13.3"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0"
+    "@types/node": "^22.10.2"
   }
 }

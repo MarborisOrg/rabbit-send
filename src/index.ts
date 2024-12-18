@@ -1,5 +1,4 @@
 import { Core } from "@marboris/coreutils";
-import { Router } from "express";
 import Joi from "joi";
 
 const EXCHANGE_NAME = "delayed_exchange";
@@ -117,7 +116,7 @@ const validateInput = (data: any) => {
 
   await rabbitMQManager.getExpress().start();
 
-  const router = Router();
+  const router = rabbitMQManager.getExpress().getRouter();
 
   router.post("/send", async (req: any, res: any) => {
     const { error, value } = validateInput(req.body);
