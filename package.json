@@ -1,7 +1,7 @@
 {
   "name": "rabbit_send",
   "version": "1.0.0",
-  "main": "rabbit.js",
+  "main": "./dist/index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -12,5 +12,8 @@
   "dependencies": {
     "@marboris/coreutils": "^2.8.12",
     "joi": "^17.13.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0"
   }
 }

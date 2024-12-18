@@ -5,6 +5,7 @@ import Joi from "joi";
 const EXCHANGE_NAME = "delayed_exchange";
 
 class RabbitMQManager extends Core {
+  channel: any;
   Main() {
     this.channel = null;
   }
@@ -23,7 +24,7 @@ class RabbitMQManager extends Core {
     }
   }
 
-  async assertQueues(queue) {
+  async assertQueues(queue: string) {
     if (!this.channel || !queue) {
       throw new Error("Channel is not initialized.");
     }
@@ -49,14 +50,23 @@ class RabbitMQManager extends Core {
     await this.amqpManager.close();
     console.log("RabbitMQ connection closed.");
   }
+
+  getConfig() {
+    return this.config;
+  }
+  getExpress() {
+    return this.expressManager;
+  }
 }
 
 class MessageSender {
-  constructor(rabbitMQManager) {
+  private rabbitMQManager: RabbitMQManager;
+
+  constructor(rabbitMQManager: RabbitMQManager) {
     this.rabbitMQManager = rabbitMQManager;
   }
 
-  async sendMessage(message, queue, delayMs = 0, retries = 3) {
+  async sendMessage(message: any, queue: string, delayMs = 0, retries = 3) {
     try {
       await this.rabbitMQManager.init();
       await this.rabbitMQManager.assertQueues(queue);
@@ -92,7 +102,7 @@ class MessageSender {
   }
 }
 
-const validateInput = (data) => {
+const validateInput = (data: any) => {
   const schema = Joi.object({
     queue: Joi.string().optional(),
     delay: Joi.number().integer().min(0).default(0),
@@ -105,14 +115,16 @@ const validateInput = (data) => {
   const rabbitMQManager = new RabbitMQManager();
   const messageSender = new MessageSender(rabbitMQManager);
 
-  await rabbitMQManager.expressManager.start();
+  await rabbitMQManager.getExpress().start();
 
   const router = Router();
 
-  router.post("/send", async (req, res) => {
+  router.post("/send", async (req: any, res: any) => {
     const { error, value } = validateInput(req.body);
     if (error) {
-      return res.status(400).json({ status: 400, message: error.details[0].message });
+      return res
+        .status(400)
+        .json({ status: 400, message: error.details[0].message });
     }
 
     const { queue, delay } = value;
@@ -120,15 +132,17 @@ const validateInput = (data) => {
     try {
       await messageSender.sendMessage(
         req.body,
-        queue || rabbitMQManager.config.Args.queue,
+        queue || rabbitMQManager.getConfig().Args.queue,
         delay
       );
-      res.status(200).json({ status: 200, message: "Message sent successfully." });
+      res
+        .status(200)
+        .json({ status: 200, message: "Message sent successfully." });
     } catch (err) {
       console.error("Error occurred during message sending:", err);
       res.status(500).json({ status: 500, message: "Failed to send message." });
     }
   });
 
-  void rabbitMQManager.expressManager.addRoute("/", router);
+  void rabbitMQManager.getExpress().addRoute("/", router);
 })();
